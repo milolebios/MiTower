@@ -1,0 +1,6 @@
+npm init -y
+npm install phaser
+npm install socket.io-client
+npm install express
+
+https://www.youtube.com/watch?v=JhK1VgYZx6E

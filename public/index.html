@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+    <title>Tower of Knowledge</title>
+    <style>
+        body { margin: 0; font-family: Arial, Helvetica, sans-serif; }
+        canvas { display: block; margin: 0 auto; background: #24252A; }
+    </style>
+</head>
+<body>
+    <script src="https://cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <script src="https://cdn.socket.io/4.0.1/socket.io.min.js"></script>
+    <script src="/public/js/game.js"></script>
+    <!-- <script>
+        // Socket.io client-side setup
+        const socket = io('http://localhost:3000');
+
+        // Basic Phaser setup
+        const config = {
+            type: Phaser.AUTO,
+            width: window.innerWidth,
+            height: window.innerHeight,
+            scene: {
+                preload: preload,
+                create: create,
+                update: update
+            }
+        };
+
+        const game = new Phaser.Game(config);
+        let sprites;
+        const TILE_WIDTH = 64;
+        const TILE_HEIGHT = 64;
+        let sKey, wKey, aKey, dKey;
+        let char, char2, charNameText, charName2Text;
+        const START_X = window.innerWidth / 2;
+        const START_Y = 120;
+        const OFFSET_X = 15 * 2;
+        const OFFSET_Y = 8 * 2;
+        const TOTAL_TILES = 10;
+        let isMoving = false;
+        let tilesArray = [];
+        let charactersArray = [];
+
+        function preload() {
+            this.load.image('floor', '/images/floor.png');
+            //
+            this.load.image('char0', '/images/tile000.png');
+            this.load.image('char1', '/images/tile001.png');
+            this.load.image('char2', '/images/tile002.png');
+            //
+            this.load.image('char3', '/images/tile003.png');
+            this.load.image('char4', '/images/tile004.png');
+            this.load.image('char5', '/images/tile005.png');
+            //
+            this.load.image('char6', '/images/tile006.png');
+            this.load.image('char7', '/images/tile007.png');
+            this.load.image('char8', '/images/tile008.png');
+            //
+            this.load.image('char9', '/images/tile009.png');
+            this.load.image('char10', '/images/tile010.png');
+            this.load.image('char11', '/images/tile011.png');
+        }
+
+        function create() {
+            sprites = this.add.group();
+            // Create a text object at the top-left corner of the screen
+            positionText = this.add.text(10, 10, '', { fontSize: '16px', fill: '#FFF' });
+
+            //create a floor
+            for (let i = 0; i < TOTAL_TILES; i++) {
+                for (let j = 0; j < TOTAL_TILES; j++) {
+                    let x = START_X + j * OFFSET_X - i * OFFSET_X;
+                    let y = START_Y + j * OFFSET_Y + i * OFFSET_Y;
+
+                    this.add.image(x, y, 'floor').setScale(2);
+                    tilesArray.push({x, y});
+                }
+            }
+
+            //Static making of character
+            char = this.add.sprite(START_X, START_Y, 'char1').setScale(2);
+            char2 = this.add.sprite(621, 248, 'char1').setScale(2);
+            charactersArray.push(char, char2);
+            sortDepth();
+
+            //initialize the keys
+            sKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.S);
+            wKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.W);
+            aKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.A);
+            dKey = this.input.keyboard.addKey(Phaser.Input.Keyboard.KeyCodes.D);
+           
+            //reserver for multiplayer
+            socket.on('someEvent', (data) => {
+            });
+
+            //sprite for walking
+            this.anims.create({
+                key: 'walk_down',
+                frames: [
+                    { key: 'char0' },
+                    { key: 'char1' },
+                    { key: 'char2' },
+                    { key: 'char1' },
+                ],
+                frameRate: 5, //Controls the speed of the animation
+                repeat: -1
+            });
+            this.anims.create({
+                key: 'walking_left',
+                frames: [
+                    { key: 'char3' },
+                    { key: 'char4' },
+                    { key: 'char5' },
+                    { key: 'char4' },
+                ],
+                frameRate: 5, //Controls the speed of the animation
+                repeat: -1
+            });
+            this.anims.create({
+                key: 'walking_right',
+                frames: [
+                    { key: 'char6' },
+                    { key: 'char7' },
+                    { key: 'char8' },
+                    { key: 'char7' },
+                ],
+                frameRate: 5, //Controls the speed of the animation
+                repeat: -1
+            });
+            this.anims.create({
+                key: 'walking_up',
+                frames: [
+                    { key: 'char9' },
+                    { key: 'char10' },
+                    { key: 'char11' },
+                    { key: 'char10' },
+                ],
+                frameRate: 5, //Controls the speed of the animation
+                repeat: -1
+            });
+        }
+
+        function hasTileAt(x, y) {
+            for (let tile of tilesArray) {
+                if (tile.x === x && tile.y === y) {
+                    return true; // Found a tile at the specified position
+                }
+            }
+            return false; // No tile found at the specified position
+        }
+        
+        function hasCharacterAt(x, y) {
+            for (let character of charactersArray) {
+                if (character.x === x && character.y === y) {
+                    return true; // Found a character at the specified position
+                }
+            }
+            return false; // No character found at the specified position
+        }
+
+        function update() {
+            positionText.setText('X: ' + char.x.toFixed(2) + ' Y: ' + char.y.toFixed(2));
+            if (wKey.isDown && !isMoving) {
+                sortDepth();
+                moveCharacterUp();
+            } else if (sKey.isDown && !isMoving) {
+                sortDepth();
+                moveCharacterDown();
+            } else if (aKey.isDown && !isMoving) {
+                sortDepth();
+                moveCharacterLeft();
+            } else if (dKey.isDown && !isMoving) {
+                sortDepth();
+                moveCharacterRight();
+            } else {
+                isMoving = false;
+            }
+        }
+
+        function sortDepth() {
+            if (char.y > char2.y) {
+                char.setDepth(1);
+                char2.setDepth(0);
+            } else {
+                char.setDepth(0);
+                char2.setDepth(1);
+            }
+        }
+
+        function moveCharacterDown() {
+            isMoving = true;
+            const targetX = char.x - OFFSET_X;
+            const targetY = char.y + OFFSET_Y;
+
+            if (hasTileAt(targetX, targetY) && !hasCharacterAt(targetX, targetY)) {
+                // Stop any existing tweens on the character
+                char.scene.tweens.killTweensOf(char);
+
+                char.play('walk_down');
+
+                char.scene.tweens.add({
+                    targets: char,
+                    x: targetX,
+                    y: targetY,
+                    duration: 1000,  // Adjust duration as needed
+                    ease: 'Linear',
+                    onComplete: function () {
+                        char.anims.stop();  // Stop the walking animation when movement is done
+                        char.setTexture('char1');
+                        isMoving = false;
+                    }
+                });
+            }
+        }
+
+        function moveCharacterUp() {
+            const targetX = char.x + OFFSET_X;  // Move to the right for upward movement in isometric grid
+            const targetY = char.y - OFFSET_Y;  // Move upwards in the isometric grid
+
+            if (hasTileAt(targetX, targetY) && !hasCharacterAt(targetX, targetY)) {
+                isMoving = true;
+
+                char.play('walking_up');  // Assuming you have an 'walk_up' animation for moving upwards
+
+                char.scene.tweens.add({
+                    targets: char,
+                    x: targetX,
+                    y: targetY,
+                    duration: 1000,
+                    ease: 'Linear',
+                    onComplete: function () {
+                        char.anims.stop();
+                        char.setTexture('char10');
+                        isMoving = false;
+                    }
+                });
+            }
+        }
+
+        function moveCharacterLeft() {
+            const targetX = char.x - OFFSET_X;  // Move to the left for leftward movement in isometric grid
+            const targetY = char.y - OFFSET_Y;  // Move upwards
+
+            if (hasTileAt(targetX, targetY) && !hasCharacterAt(targetX, targetY)) {
+                isMoving = true;
+
+                char.play('walking_left');  // Assuming you have a 'walk_left' animation
+
+                char.scene.tweens.add({
+                    targets: char,
+                    x: targetX,
+                    y: targetY,
+                    duration: 1000,
+                    ease: 'Linear',
+                    onComplete: function () {
+                        char.anims.stop();
+                        char.setTexture('char4');
+                        isMoving = false;
+                    }
+                });
+            }
+        }
+
+        function moveCharacterRight() {
+            const targetX = char.x + OFFSET_X;  // Move to the right for rightward movement in isometric grid
+            const targetY = char.y + OFFSET_Y;  // Move downwards
+
+            if (hasTileAt(targetX, targetY) && !hasCharacterAt(targetX, targetY)) {
+                isMoving = true;
+
+                char.play('walking_right');  // Assuming you have a 'walk_right' animation
+
+                char.scene.tweens.add({
+                    targets: char,
+                    x: targetX,
+                    y: targetY,
+                    duration: 1000,
+                    ease: 'Linear',
+                    onComplete: function () {
+                        char.anims.stop();
+                        char.setTexture('char7');
+                        isMoving = false;
+                    }
+                });
+            }
+        }
+    </script> -->
+</body>
+</html>
